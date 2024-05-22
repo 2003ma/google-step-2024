@@ -19,7 +19,7 @@ def calculate_hash(key):
     # Note: This is not a good hash function. Do you see why?
     hash = 0
     for i in range(len(key)):
-        hash += ord(key[i]) * 26**i
+        hash += ord(key[i]) * 26**i  # これは普通にiをかけるだけでいいんじゃないか。
     return hash
 
 
@@ -57,9 +57,11 @@ class HashTable:
         previous_buckets = self.buckets  # Copy previous buckets
         self.buckets = [None] * self.bucket_size  # Remake hash table
         for item in previous_buckets:
-            if item:
+            if item:  # これ要らないな
                 while item:
-                    self.put(item.key, item.value)
+                    self.put(
+                        item.key, item.value
+                    )  # private_putを作って、ハッシュを計算して新しいハッシュテーブルに突っ込む。そうしないとputで
                     self.item_count -= 1
                     item = item.next
         return True
@@ -129,6 +131,8 @@ class HashTable:
         self.check_size()  # Note: Don't remove this code.
         bucket_index = calculate_hash(key) % self.bucket_size
         item = self.buckets[bucket_index]
+        # previous_node=None
+        # previous_nodeがNoneかどうかで場合分けをする
         if item:
             current_node = item
             if item.key == key:  # Check a first node.
