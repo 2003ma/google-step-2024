@@ -133,11 +133,12 @@ def evaluate(tokens):
     return answer
 
 
+# 他の解き方　再帰じゃなくする括弧の位置のインデックスを保存していく　コピーをするとコストがかかる
 def evaluate_parentheses(tokens):
-    parentheses_flag = 0
+    parentheses_flag = 0  # これいらない
     temp_list = []
     new_list = []
-    right_parentheses = 0
+    right_parentheses = 0  # この二つをまとめてparentheses_levelが0から1になった時に括弧のなかに入って、1から0になった時にカッコから出る
     left_parentheses = 0
     index = 0
 
@@ -194,12 +195,14 @@ def test(line):
 # Add more tests to this function :)
 def run_test():
     print("==== Test started! ====")
+    test("1")
     test("1+2")
-    test("1.0+2.1-3")
+    test("1.0+2.0")
     test("1.0+2")
+    test("1.0+2.1-3")
     test("1.0/2.0")
+    test("2.2*3.4")
     test("3.0+4*2/5+3")
-    test("3.0/4*2/5+3")
     test("(3+4*(2-1))/5")
     print("==== Test finished! ====\n")
 
@@ -213,3 +216,7 @@ while True:
     print(tokens)
     answer = evaluate(tokens)
     print("answer = %f\n" % answer)
+
+# 本質としては、関数の始まりから終わりをevaluateで計算して一つの数字に置き換える
+# 括弧の役割を共通化するとシンプルになる
+# 処理もコードベースで考えるんじゃなくて、具体的に何をしてるのかをを追ってみる
