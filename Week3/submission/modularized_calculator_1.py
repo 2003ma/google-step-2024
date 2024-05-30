@@ -40,26 +40,10 @@ def read_divide(line, index):
 # 括弧を読む
 def read_parentheses(line, index):
     if line[index] == "(":
-        token = {"type": "PARENTHESES", "PAIR": "("}
+        token = {"type": "OPEN_PARENTHESES"}
     else:
-        token = {"type": "PARENTHESES", "PAIR": ")"}
+        token = {"type": "END_PARENTHESES"}
     return token, index + 1
-
-
-def calculate_mul(num1, num2):
-    return num1 * num2
-
-
-def calculate_divide(num1, num2):
-    return num1 / num2
-
-
-def calculate_plus(num1, num2):
-    return num1 + num2
-
-
-def calculate_minus(num1, num2):
-    return num1 - num2
 
 
 def tokenize(line):
@@ -86,40 +70,35 @@ def tokenize(line):
     return tokens
 
 
-# /と*の演算子が来た時の処理
-def calculate_mul_divide(tokens, index):
-    while index < len(tokens):
-        if tokens[index]["type"] == "MUL":
-            num1 = tokens[index - 1]["number"]
-            num2 = tokens[index + 1]["number"]
-            result = calculate_mul(num1, num2)
-            tokens[index - 1 : index + 2] = [{"type": "NUMBER", "number": result}]
-        elif tokens[index]["type"] == "DIVIDE":
-            num1 = tokens[index - 1]["number"]
-            num2 = tokens[index + 1]["number"]
-            result = calculate_divide(num1, num2)
-            tokens[index - 1 : index + 2] = [{"type": "NUMBER", "number": result}]
-        else:
-            index += 1
-    return tokens
-
-
 # *と/だけを計算して、+と-だけが残った新しいtokenを作る
 def evaluate_mul_divide(tokens):
     index = 1
     while index < len(tokens):
         if tokens[index]["type"] == "MUL" or tokens[index]["type"] == "DIVIDE":
-            tokens = calculate_mul_divide(tokens, index)
+            while index < len(tokens):
+                if tokens[index]["type"] == "MUL":
+                    num1 = tokens[index - 1]["number"]
+                    num2 = tokens[index + 1]["number"]
+                    result = num1 * num2
+                    tokens[index - 1 : index + 2] = [
+                        {"type": "NUMBER", "number": result}
+                    ]
+                elif tokens[index]["type"] == "DIVIDE":
+                    num1 = tokens[index - 1]["number"]
+                    num2 = tokens[index + 1]["number"]
+                    result = num1 / num2
+                    tokens[index - 1 : index + 2] = [
+                        {"type": "NUMBER", "number": result}
+                    ]
+                else:
+                    index += 1
         index += 1
     return tokens
 
 
-def evaluate(tokens):
+def evaluate_plus_minus(tokens):
     answer = 0
     index = 0
-    tokens.insert(0, {"type": "PLUS"})
-    tokens = evaluate_mul_divide(tokens)
-    print(tokens)
     while index < len(tokens):
         if tokens[index]["type"] == "NUMBER":
             if tokens[index - 1]["type"] == "PLUS":
@@ -133,53 +112,46 @@ def evaluate(tokens):
     return answer
 
 
+def evaluate(tokens):
+    tokens.insert(0, {"type": "PLUS"})
+    tokens = evaluate_parentheses(tokens)
+    tokens = evaluate_mul_divide(tokens)
+    answer = evaluate_plus_minus(tokens)
+    return answer
+
+
 # 他の解き方　再帰じゃなくする括弧の位置のインデックスを保存していく　コピーをするとコストがかかる
 def evaluate_parentheses(tokens):
-    parentheses_flag = 0  # これいらない
     temp_list = []
     new_list = []
-    right_parentheses = 0  # この二つをまとめてparentheses_levelが0から1になった時に括弧のなかに入って、1から0になった時にカッコから出る
-    left_parentheses = 0
+    parentheses_level = 0
     index = 0
-
     while index < len(tokens):
-        if tokens[index]["type"] == "PARENTHESES":
-            if tokens[index]["PAIR"] == "(":
-                left_parentheses += 1
-                if left_parentheses == 1:
-                    parentheses_flag = 1
-            elif tokens[index]["PAIR"] == ")":
-                right_parentheses += 1
-                if left_parentheses == right_parentheses:
-                    parentheses_flag = 0
-                    temp_list.pop(0)
-                    new_list.append(
-                        {
-                            "type": "NUMBER",
-                            "number": evaluate(evaluate_parentheses(temp_list)),
-                        }
-                    )
-                    temp_list = []
-                    left_parentheses = 0
-                    right_parentheses = 0
-                    index += 1
-                    continue
-
-        if parentheses_flag:
-            if left_parentheses != right_parentheses:
-                temp_list.append(tokens[index])
+        if tokens[index]["type"] == "OPEN_PARENTHESES":
+            parentheses_level += 1
+        elif tokens[index]["type"] == "END_PARENTHESES":
+            parentheses_level -= 1
+            if parentheses_level == 0:
+                temp_list.pop(0)
+                new_list.append(
+                    {
+                        "type": "NUMBER",
+                        "number": evaluate(temp_list),
+                    }
+                )
+                temp_list = []
+                index += 1
+                continue
+        if parentheses_level != 0:
+            temp_list.append(tokens[index])
         else:
             new_list.append(tokens[index])
-
         index += 1
     return new_list
 
 
 def test(line):
     tokens = tokenize(line)
-    print("Tokens:", tokens)
-    tokens = evaluate_parentheses(tokens)
-    print("Tokens after parentheses evaluation:", tokens)
     actual_answer = evaluate(tokens)
     print("Actual answer:", actual_answer)
     expected_answer = eval(line)
